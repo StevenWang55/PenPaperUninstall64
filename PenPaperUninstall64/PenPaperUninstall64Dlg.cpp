@@ -82,6 +82,9 @@ BOOL CPenPaperUninstall64Dlg::OnInitDialog()
 	static WCHAR	szStartMenuFolder[MAX_PATH];
 	static WCHAR	szStartMenuFile[MAX_PATH];
 
+	LPSTR*	FilePart;
+	static CHAR	szCurrentDir[MAX_PATH];
+	static CHAR szFinalCommand[MAX_PATH];
 
 	//==============================================
 	// Step 1: Uninstall the PenPaper HID minidriver
@@ -201,8 +204,8 @@ BOOL CPenPaperUninstall64Dlg::OnInitDialog()
 						continue;
 					}
 
-					csString.Format(L"Device Unistalled successful: %ws", pDeviceInterfaceDetailData->DevicePath);
-					MessageBox(csString, L"PenPaper.Uninhstall", MB_OK);
+					//csString.Format(L"Device Unistalled successful: %ws", pDeviceInterfaceDetailData->DevicePath);
+					//MessageBox(csString, L"PenPaper.Uninhstall", MB_OK);
 
 					//------------------------------------------------------
 					// Uninstall INF file and driver package in driver store
@@ -239,7 +242,8 @@ BOOL CPenPaperUninstall64Dlg::OnInitDialog()
 	PathAppend(szTargetUserGuideFile, TEXT("PenPaper Control Panel User Guide.pdf"));
 	_wremove(szTargetUserGuideFile);
 
-	_wrmdir(szTargetFolder);
+	// 2018.4.11, The folder will be remove in step 4
+	//_wrmdir(szTargetFolder);
 
 	//============================================================
 	// Step 3: Remove the Shortcut files on Desktop and Start Menu
@@ -266,7 +270,27 @@ BOOL CPenPaperUninstall64Dlg::OnInitDialog()
 	PathAppend(szDesktopFile, TEXT("PenPaper Control Panel User Guide.lnk"));
 	_wremove(szDesktopFile);
 
-	MessageBox(L"Finish to uninstall the PenPaper HID minidriver", L"PenPaper.Uninhstall", MB_OK);
+	wcscpy_s(szDesktopFile, szStartMenuFolder);
+	PathAppend(szDesktopFile, TEXT("Uninstall PenPaper.lnk"));
+	_wremove(szDesktopFile);
+
+	MessageBox(L"PenPaper HID minidriver uninstalled.", L"PenPaper.Uninhstall", MB_OK);
+
+	//-------------------------------------------------
+	// Step 4: Delete ourself (PenPaperUninstall64.exe)
+	//-------------------------------------------------
+	//---------------------------------
+	// Get full path of our executable.
+	//---------------------------------
+	FilePart = NULL;
+	SearchPathA(NULL, "PenPaperUninstall64.exe", NULL, MAX_PATH, szCurrentDir, FilePart);
+	PathRemoveFileSpecA(szCurrentDir);
+	PathStripPathA(szCurrentDir);	// "ACECAD"
+	//WinExec("cmd.exe /C choice /C Y /N /D Y /T 5 & Del PenPaperUninstall64.exe & cd.. & rd Test", SW_SHOWDEFAULT);
+	strcpy_s(szFinalCommand, "cmd.exe /C choice /C Y /N /D Y /T 6 & cd.. & rd /S /Q ");
+	strcat_s(szFinalCommand, szCurrentDir);
+	WinExec(szFinalCommand, SW_HIDE);
+
 	EndDialog(IDCANCEL);
 	return 0;
 	//return TRUE;  // return TRUE  unless you set the focus to a control
